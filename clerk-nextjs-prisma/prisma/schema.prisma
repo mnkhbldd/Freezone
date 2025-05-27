@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  clerkId   String   @unique
+  email     String   @unique
+  userName  String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isAdmin   Boolean
+  profile   Profile?
+  bookings  Booking[]
+  reviews   Review[]
+  companies Company[] @relation("UserCompanies")
+}
+
+model Profile {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int      @unique
+  avatarImage String
+  firstName   String
+  lastName    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Company {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  location    String
+  contactInfo Json?
+  price       Decimal    @db.Decimal(10, 2)
+  photos      Photo[]
+  bookings    Booking[]
+  reviews     Review[]
+  categories  Category[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  createdBy Int
+  creator   User @relation("UserCompanies", fields: [createdBy], references: [id])
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  type      String
+  companies Company[]
+}
+
+model Photo {
+  id        Int     @id @default(autoincrement())
+  url       String
+  companyId Int
+  Company   Company @relation(fields: [companyId], references: [id])
+}
+
+model Booking {
+  id          Int           @id @default(autoincrement())
+  companyId   Int
+  userId      Int?
+  date        DateTime
+  status      BookingStatus @default(PENDING)
+  isAvailable Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  Company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  userId    Int?
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  Company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
